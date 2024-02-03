@@ -173,11 +173,93 @@ extension BrowserViewController: TabToolbarDelegate, PhotonActionSheetProtocol {
     }
     
     func tabToolbarDidPressSummarize(_ tabToolbar: TabToolbarProtocol, button: UIButton) {
-        // Display a simple alert with text
-        let alertController = UIAlertController(title: "Summarize Feature", message: "This feature is under development.", preferredStyle: .alert)
-        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-        present(alertController, animated: true, completion: nil)
+        let userDefaults = UserDefaults.standard
+        if let _ = userDefaults.string(forKey: "APIKey") {
+            let alertController = UIAlertController(title: "Oh no!", message: "The page you're trying to summarize has no content or is blocking the action.", preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            guard let webView = tabManager.selectedTab?.webView else {
+                present(alertController, animated: true, completion: nil)
+                return
+            }
+
+            let summarizer = Summarizer(webView: webView)
+            Task {
+                if let summary = await summarizer.summarizePage() {
+                    if summary.isEmpty {
+                        alertIncorrectAPIKey()
+                    } else if (summary.starts(with: "Error")) {
+                        presentAlert(title: "Error", message: summary, allowAPIKeyUpdate: true)
+                    }else {
+                        self.showSummary(summary)
+                    }
+                } else {
+                    presentAlert(title: "Error", message: "Failed to summarize the page.", allowAPIKeyUpdate: true)
+                }
+            }
+        } else {
+            promptForAPIKey()
+        }
+        
+        func presentAlert(title: String, message: String, allowAPIKeyUpdate: Bool = false) {
+            let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+
+            // OK action
+            alertController.addAction(UIAlertAction(title: "OK", style: .default))
+
+            // Update API Key action
+            if allowAPIKeyUpdate {
+                let updateAction = UIAlertAction(title: "UPDATE API KEY", style: .default) { _ in
+                    promptForAPIKey()
+                }
+                alertController.addAction(updateAction)
+            }
+
+            present(alertController, animated: true)
+        }
+        
+        func promptForAPIKey() {
+            let alertController = UIAlertController(title: "Enter API Key", message: "Please enter your ChatGPT API key to proceed.", preferredStyle: .alert)
+
+            alertController.addTextField { textField in
+                textField.placeholder = "API Key"
+            }
+
+            let confirmAction = UIAlertAction(title: "Confirm", style: .default) { [weak self, weak alertController] _ in
+                guard let apiKey = alertController?.textFields?.first?.text, !apiKey.isEmpty else { return }
+                UserDefaults.standard.set(apiKey, forKey: "APIKey")
+                self?.tabToolbarDidPressSummarize(tabToolbar, button: button)
+            }
+
+            let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+
+            alertController.addAction(confirmAction)
+            alertController.addAction(cancelAction)
+
+            present(alertController, animated: true)
+        }
+
+        func alertIncorrectAPIKey() {
+            let alertController = UIAlertController(title: "Invalid API Key", message: "The API key provided seems to be incorrect. Please enter a valid API key.", preferredStyle: .alert)
+
+            alertController.addTextField { textField in
+                textField.placeholder = "API Key"
+            }
+
+            let updateAction = UIAlertAction(title: "Update", style: .default) { [weak self, weak alertController] _ in
+                guard let newApiKey = alertController?.textFields?.first?.text, !newApiKey.isEmpty else { return }
+                UserDefaults.standard.set(newApiKey, forKey: "APIKey")
+                self?.tabToolbarDidPressSummarize(tabToolbar, button: button)
+            }
+
+            let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+
+            alertController.addAction(updateAction)
+            alertController.addAction(cancelAction)
+
+            present(alertController, animated: true)
+        }
     }
+
 
 
     func tabToolbarDidPressTabs(_ tabToolbar: TabToolbarProtocol, button: UIButton) {
@@ -351,5 +433,16 @@ extension BrowserViewController: ToolBarActionMenuDelegate {
         presentSignInViewController(fxaParameters.launchParameters,
                                     flowType: fxaParameters.flowType,
                                     referringPage: fxaParameters.referringPage)
+    }
+    
+    func showSummary(_ summary: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let strongSelf = self else { return }
+
+            let summaryView = SummaryView()
+            summaryView.displaySummary(summary)
+            summaryView.frame = CGRect(x: 20, y: 100, width: strongSelf.view.bounds.width - 40, height: 300)
+            strongSelf.view.addSubview(summaryView)
+        }
     }
 }
