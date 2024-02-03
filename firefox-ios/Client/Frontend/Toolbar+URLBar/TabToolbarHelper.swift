@@ -10,6 +10,7 @@ protocol TabToolbarProtocol: AnyObject {
     var tabToolbarDelegate: TabToolbarDelegate? { get set }
 
     var addNewTabButton: ToolbarButton { get }
+    var summarizeButton: ToolbarButton { get }
     var tabsButton: TabsButton { get }
     var appMenuButton: ToolbarButton { get }
     var bookmarksButton: ToolbarButton { get }
@@ -38,6 +39,7 @@ protocol TabToolbarDelegate: AnyObject {
     func tabToolbarDidPressFire(_ tabToolbar: TabToolbarProtocol, button: UIButton)
     func tabToolbarDidPressMenu(_ tabToolbar: TabToolbarProtocol, button: UIButton)
     func tabToolbarDidPressBookmarks(_ tabToolbar: TabToolbarProtocol, button: UIButton)
+    func tabToolbarDidPressSummarize(_ tabToolbar: TabToolbarProtocol, button: UIButton)
     func tabToolbarDidPressTabs(_ tabToolbar: TabToolbarProtocol, button: UIButton)
     func tabToolbarDidLongPressTabs(_ tabToolbar: TabToolbarProtocol, button: UIButton)
     func tabToolbarDidPressSearch(_ tabToolbar: TabToolbarProtocol, button: UIButton)
@@ -111,6 +113,12 @@ open class TabToolbarHelper: NSObject {
         longPressGestureRecognizers.append(longPressGestureBackButton)
         toolbar.backButton.addGestureRecognizer(longPressGestureBackButton)
         toolbar.backButton.addTarget(self, action: #selector(didClickBack), for: .touchUpInside)
+        
+        toolbar.backButton.setImage(
+            UIImage.templateImageNamed(StandardImageIdentifiers.Large.back)?
+                .imageFlippedForRightToLeftLayoutDirection(),
+            for: .normal
+        )
 
         toolbar.forwardButton.setImage(
             UIImage.templateImageNamed(StandardImageIdentifiers.Large.forward)?
@@ -135,6 +143,13 @@ open class TabToolbarHelper: NSObject {
         toolbar.multiStateButton.showsLargeContentViewer = true
         toolbar.multiStateButton.addTarget(self, action: #selector(didPressMultiStateButton), for: .touchUpInside)
 
+        toolbar.summarizeButton.setImage(
+            UIImage.templateImageNamed(StandardImageIdentifiers.Large.lightbulb),
+            for: .normal
+        )
+        toolbar.summarizeButton.accessibilityLabel = NSLocalizedString("Summarize", comment: "Accessibility label for the summarize button")
+        toolbar.summarizeButton.addTarget(self, action: #selector(didPressSummarize), for: .touchUpInside)
+        
         toolbar.tabsButton.addTarget(self, action: #selector(didClickTabs), for: .touchUpInside)
         let longPressGestureTabsButton = UILongPressGestureRecognizer(target: self, action: #selector(didLongPressTabs))
         toolbar.tabsButton.addGestureRecognizer(longPressGestureTabsButton)
@@ -200,6 +215,11 @@ open class TabToolbarHelper: NSObject {
             TelemetryWrapper.recordEvent(category: .action, method: .press, object: .navigateTabHistoryBack)
         }
     }
+    
+    func didPressSummarize() {
+        toolbar.tabToolbarDelegate?.tabToolbarDidPressSummarize(toolbar, button: toolbar.summarizeButton)
+    }
+
 
     func didClickTabs() {
         toolbar.tabToolbarDelegate?.tabToolbarDidPressTabs(toolbar, button: toolbar.tabsButton)

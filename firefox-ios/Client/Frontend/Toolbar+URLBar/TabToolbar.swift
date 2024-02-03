@@ -11,6 +11,7 @@ class TabToolbar: UIView, SearchBarLocationProvider {
 
     weak var tabToolbarDelegate: TabToolbarDelegate?
 
+    let summarizeButton = ToolbarButton()
     let tabsButton = TabsButton()
     let addNewTabButton = ToolbarButton()
     let appMenuButton = ToolbarButton()
@@ -30,17 +31,18 @@ class TabToolbar: UIView, SearchBarLocationProvider {
 
     // MARK: - Initializers
     override private init(frame: CGRect) {
-        actionButtons = [backButton, forwardButton, multiStateButton, addNewTabButton, tabsButton, appMenuButton]
+        actionButtons = [backButton, forwardButton, multiStateButton, addNewTabButton, summarizeButton, tabsButton, appMenuButton]
         super.init(frame: frame)
-        setupAccessibility()
 
+        setupAccessibility()
+        
         addSubview(contentView)
         helper = TabToolbarHelper(toolbar: self)
         addButtons(actionButtons)
-
+        
         privateModeBadge.add(toParent: contentView)
         warningMenuBadge.add(toParent: contentView)
-
+        
         contentView.axis = .horizontal
         contentView.distribution = .fillEqually
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -68,6 +70,7 @@ class TabToolbar: UIView, SearchBarLocationProvider {
     private func setupAccessibility() {
         backButton.accessibilityIdentifier = AccessibilityIdentifiers.Toolbar.backButton
         forwardButton.accessibilityIdentifier = AccessibilityIdentifiers.Toolbar.forwardButton
+        summarizeButton.accessibilityIdentifier = AccessibilityIdentifiers.Toolbar.summarizeButton
         tabsButton.accessibilityIdentifier = AccessibilityIdentifiers.Toolbar.tabsButton
         addNewTabButton.accessibilityIdentifier = AccessibilityIdentifiers.Toolbar.addNewTabButton
         appMenuButton.accessibilityIdentifier = AccessibilityIdentifiers.Toolbar.settingsMenuButton

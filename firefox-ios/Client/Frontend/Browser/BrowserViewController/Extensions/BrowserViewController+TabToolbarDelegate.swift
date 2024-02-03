@@ -171,6 +171,14 @@ extension BrowserViewController: TabToolbarDelegate, PhotonActionSheetProtocol {
             self.presentSheetWith(viewModel: viewModel, on: self, from: button)
         }
     }
+    
+    func tabToolbarDidPressSummarize(_ tabToolbar: TabToolbarProtocol, button: UIButton) {
+        // Display a simple alert with text
+        let alertController = UIAlertController(title: "Summarize Feature", message: "This feature is under development.", preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(alertController, animated: true, completion: nil)
+    }
+
 
     func tabToolbarDidPressTabs(_ tabToolbar: TabToolbarProtocol, button: UIButton) {
         updateZoomPageBarVisibility(visible: false)

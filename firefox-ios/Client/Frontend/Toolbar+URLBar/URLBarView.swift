@@ -200,8 +200,15 @@ class URLBarView: UIView, URLBarViewProtocol, AlphaDimmable, TopBottomInterchang
         backButton.accessibilityIdentifier = AccessibilityIdentifiers.Toolbar.backButton
         return backButton
     }()
+    
+    var summarizeButton: ToolbarButton = {
+        let summarizeButton = ToolbarButton()
+        summarizeButton.accessibilityIdentifier = AccessibilityIdentifiers.Toolbar.summarizeButton
+        return summarizeButton
+    }()
 
     lazy var actionButtons: [ThemeApplicable & UIButton] = [
+        self.summarizeButton,
         self.tabsButton,
         self.bookmarksButton,
         self.appMenuButton,
@@ -255,6 +262,7 @@ class URLBarView: UIView, URLBarViewProtocol, AlphaDimmable, TopBottomInterchang
         [
             scrollToTopButton,
             line,
+            summarizeButton,
             tabsButton,
             progressBar,
             cancelButton,
@@ -304,6 +312,12 @@ class URLBarView: UIView, URLBarViewProtocol, AlphaDimmable, TopBottomInterchang
             make.centerY.equalTo(self)
             make.size.equalTo(URLBarViewUX.ButtonHeight)
         }
+        
+        summarizeButton.snp.makeConstraints { make in
+            make.leading.equalTo(self.safeArea.leading).offset(URLBarViewUX.Padding)
+            make.centerY.equalTo(self)
+            make.size.equalTo(URLBarViewUX.ButtonHeight)
+        }
 
         forwardButton.snp.makeConstraints { make in
             make.leading.equalTo(self.backButton.snp.trailing)
@@ -337,6 +351,12 @@ class URLBarView: UIView, URLBarViewProtocol, AlphaDimmable, TopBottomInterchang
             make.size.equalTo(URLBarViewUX.ButtonHeight)
         }
 
+        summarizeButton.snp.makeConstraints { make in
+            make.trailing.equalTo(self.appMenuButton.snp.leading)
+            make.centerY.equalTo(self)
+            make.size.equalTo(URLBarViewUX.ButtonHeight)
+        }
+        
         addNewTabButton.snp.makeConstraints { make in
             make.trailing.equalTo(self.tabsButton.snp.leading)
             make.centerY.equalTo(self)
@@ -578,6 +598,7 @@ class URLBarView: UIView, URLBarViewProtocol, AlphaDimmable, TopBottomInterchang
         cancelButton.isHidden = false
         showQRScannerButton.isHidden = false
         progressBar.isHidden = false
+        summarizeButton.isHidden = !toolbarIsShowing
         addNewTabButton.isHidden = !toolbarIsShowing || topTabsIsShowing
         appMenuButton.isHidden = !toolbarIsShowing
         bookmarksButton.isHidden = !toolbarIsShowing || !topTabsIsShowing
@@ -592,6 +613,7 @@ class URLBarView: UIView, URLBarViewProtocol, AlphaDimmable, TopBottomInterchang
         cancelButton.alpha = inOverlayMode ? 1 : 0
         showQRScannerButton.alpha = inOverlayMode ? 1 : 0
         progressBar.alpha = inOverlayMode || didCancel ? 0 : 1
+        summarizeButton.alpha = inOverlayMode ? 0 : 1
         tabsButton.alpha = inOverlayMode ? 0 : 1
         appMenuButton.alpha = inOverlayMode ? 0 : 1
         bookmarksButton.alpha = inOverlayMode ? 0 : 1
@@ -628,6 +650,7 @@ class URLBarView: UIView, URLBarViewProtocol, AlphaDimmable, TopBottomInterchang
         bookmarksButton.isHidden = !toolbarIsShowing || inOverlayMode || !topTabsIsShowing
         forwardButton.isHidden = !toolbarIsShowing || inOverlayMode
         backButton.isHidden = !toolbarIsShowing || inOverlayMode
+        summarizeButton.isHidden = !toolbarIsShowing || inOverlayMode
         tabsButton.isHidden = !toolbarIsShowing || inOverlayMode || topTabsIsShowing
         multiStateButton.isHidden = !toolbarIsShowing || inOverlayMode
 
@@ -724,6 +747,7 @@ extension URLBarView: TabToolbarProtocol {
                         forwardButton,
                         multiStateButton,
                         locationView,
+                        summarizeButton,
                         tabsButton,
                         bookmarksButton,
                         appMenuButton,
@@ -874,6 +898,7 @@ extension URLBarView: ThemeApplicable {
         locationTextField?.applyTheme(theme: theme)
 
         actionButtons.forEach { $0.applyTheme(theme: theme) }
+        summarizeButton.applyTheme(theme: theme)
         tabsButton.applyTheme(theme: theme)
         addNewTabButton.applyTheme(theme: theme)
 
