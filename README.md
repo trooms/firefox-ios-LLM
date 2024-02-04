@@ -1,6 +1,6 @@
 ## Firefox for iOS with ChatGPT Summary Integration
 #### TODO:
-- Redo generation
+- Redo generation button
 - Switch API Key after a useable one is used (right now only lets you switch api key if its broken)
 - Change language models
 - Refine system prompt
