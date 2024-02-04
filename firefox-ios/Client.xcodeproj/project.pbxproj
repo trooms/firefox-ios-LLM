@@ -559,9 +559,10 @@
 		7BEB64441C7345600092C02E /* L10nSuite2SnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B3632D31C2983F000D12AF9 /* L10nSuite2SnapshotTests.swift */; };
 		7BEB64451C7345600092C02E /* SnapshotHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B60B0071BDE3AE10090C984 /* SnapshotHelper.swift */; };
 		7BEFC6801BFF68C30059C952 /* QuickActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BEFC67F1BFF68C30059C952 /* QuickActions.swift */; };
-		7D45D7632B6E8C1D00B80D7F /* SummarizeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D45D7622B6E8C1D00B80D7F /* SummarizeView.swift */; };
+		7D45D7632B6E8C1D00B80D7F /* SummarizeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D45D7622B6E8C1D00B80D7F /* SummarizeViewController.swift */; };
 		7D45D7652B6E8D7800B80D7F /* Summarizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D45D7642B6E8D7800B80D7F /* Summarizer.swift */; };
 		7D45D76F2B6EADEC00B80D7F /* OpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = 7D45D76E2B6EADEC00B80D7F /* OpenAI */; };
+		7D45D7722B6F048400B80D7F /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7D45D7712B6F048400B80D7F /* MarkdownUI */; };
 		810FF3542B178343009F062C /* FeltPrivacyMiddleware.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810FF3532B178343009F062C /* FeltPrivacyMiddleware.swift */; };
 		810FF3562B1783B0009F062C /* FeltPrivacyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810FF3552B1783B0009F062C /* FeltPrivacyManager.swift */; };
 		810FF3582B1784E7009F062C /* PrivateModeAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810FF3572B1784E7009F062C /* PrivateModeAction.swift */; };
@@ -5420,7 +5421,7 @@
 		7CCE4F3991EF02E0EE75067B /* pt-PT */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-PT"; path = "pt-PT.lproj/Shared.strings"; sourceTree = "<group>"; };
 		7CE542F7A81BCA33C15FC256 /* my */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = my; path = my.lproj/Search.strings; sourceTree = "<group>"; };
 		7CFB4524B61617C88AB63025 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Today.strings; sourceTree = "<group>"; };
-		7D45D7622B6E8C1D00B80D7F /* SummarizeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizeView.swift; sourceTree = "<group>"; };
+		7D45D7622B6E8C1D00B80D7F /* SummarizeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizeViewController.swift; sourceTree = "<group>"; };
 		7D45D7642B6E8D7800B80D7F /* Summarizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Summarizer.swift; sourceTree = "<group>"; };
 		7D8C4C90AE8F7B582645FF47 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		7D92472BA54D9EBCE438E834 /* kk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = kk; path = kk.lproj/Intro.strings; sourceTree = "<group>"; };
@@ -7746,6 +7747,7 @@
 				432BD0242790EBD000A0F3C3 /* Adjust in Frameworks */,
 				0B8E0FF41A932BD500161DC3 /* ImageIO.framework in Frameworks */,
 				435C85F02788F4D00072B526 /* Glean in Frameworks */,
+				7D45D7722B6F048400B80D7F /* MarkdownUI in Frameworks */,
 				433F87CE2788EAB600693368 /* GCDWebServers in Frameworks */,
 				5A06135A29D6052E008F3D38 /* TabDataStore in Frameworks */,
 				216A0D762A40E7AB008077BA /* Redux in Frameworks */,
@@ -10562,7 +10564,7 @@
 				59A68B1F857A8638598A63A0 /* TwoLineImageOverlayCell.swift */,
 				BD4B2DE129BB4CD9005FAA50 /* SnackButton.swift */,
 				BD4B2DE329BB4D9A005FAA50 /* TimerSnackBar.swift */,
-				7D45D7622B6E8C1D00B80D7F /* SummarizeView.swift */,
+				7D45D7622B6E8C1D00B80D7F /* SummarizeViewController.swift */,
 			);
 			path = Widgets;
 			sourceTree = "<group>";
@@ -12110,6 +12112,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				7D45D7742B6F04B000B80D7F /* PBXTargetDependency */,
 				7D45D76D2B6EAA6100B80D7F /* PBXTargetDependency */,
 				435A2FF7278F51CD00C94282 /* PBXTargetDependency */,
 				C82043712523DBEB00740B71 /* PBXTargetDependency */,
@@ -12133,6 +12136,7 @@
 				8AF2D0FB2A5F272A00C7DD69 /* ComponentLibrary */,
 				8AB30EC72B6C038600BD9A9B /* Lottie */,
 				7D45D76E2B6EADEC00B80D7F /* OpenAI */,
+				7D45D7712B6F048400B80D7F /* MarkdownUI */,
 			);
 			productName = Client;
 			productReference = F84B21BE1A090F8100AAB793 /* Client.app */;
@@ -12453,6 +12457,7 @@
 				5A37861729A2C337006B3A34 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 				8AB30EC62B6C038600BD9A9B /* XCRemoteSwiftPackageReference "lottie-ios" */,
 				7D45D76B2B6EAA1E00B80D7F /* XCRemoteSwiftPackageReference "OpenAI" */,
+				7D45D7702B6F048400B80D7F /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 			);
 			productRefGroup = F84B21BF1A090F8100AAB793 /* Products */;
 			projectDirPath = "";
@@ -13624,7 +13629,7 @@
 				D0C95E0E200FD3B200E4E51C /* PrintHelper.swift in Sources */,
 				C8CD80DA2A1E8C1D0097C3AE /* OnboardingTelemetryProtocol.swift in Sources */,
 				8A5D1CB02A30D740005AD35C /* SearchBarSetting.swift in Sources */,
-				7D45D7632B6E8C1D00B80D7F /* SummarizeView.swift in Sources */,
+				7D45D7632B6E8C1D00B80D7F /* SummarizeViewController.swift in Sources */,
 				EB9854FF2422686F0040F24B /* AppDelegate+PushNotifications.swift in Sources */,
 				DFACBF85277B9B5B003D5F41 /* TopSitesRowCountSettingsController.swift in Sources */,
 				9614BF4428AD1C6700D3F7EA /* AccountSyncHandler.swift in Sources */,
@@ -14541,6 +14546,10 @@
 		7D45D76D2B6EAA6100B80D7F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = 7D45D76C2B6EAA6100B80D7F /* OpenAI */;
+		};
+		7D45D7742B6F04B000B80D7F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 7D45D7732B6F04B000B80D7F /* MarkdownUI */;
 		};
 		C82043712523DBEB00740B71 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -21038,6 +21047,14 @@
 				minimumVersion = 0.2.5;
 			};
 		};
+		7D45D7702B6F048400B80D7F /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.3.0;
+			};
+		};
 		8AB30EC62B6C038600BD9A9B /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/airbnb/lottie-ios.git";
@@ -21199,6 +21216,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D45D76B2B6EAA1E00B80D7F /* XCRemoteSwiftPackageReference "OpenAI" */;
 			productName = OpenAI;
+		};
+		7D45D7712B6F048400B80D7F /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D45D7702B6F048400B80D7F /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
+		};
+		7D45D7732B6F04B000B80D7F /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D45D7702B6F048400B80D7F /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
 		};
 		8A05B0042A69A0C40011B622 /* Common */ = {
 			isa = XCSwiftPackageProductDependency;

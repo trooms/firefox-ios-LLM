@@ -11,6 +11,7 @@ extension BrowserViewController: TabToolbarDelegate, PhotonActionSheetProtocol {
 
     // Reset the CFR timer for the data clearance button to avoid presenting the CFR
     // In cases, such as if user navigates to homepage or if fire icon is not available
+
     func resetDataClearanceCFRTimer() {
         dataClearanceContextHintVC.stopTimer()
     }
@@ -175,21 +176,22 @@ extension BrowserViewController: TabToolbarDelegate, PhotonActionSheetProtocol {
     func tabToolbarDidPressSummarize(_ tabToolbar: TabToolbarProtocol, button: UIButton) {
         let userDefaults = UserDefaults.standard
         if let _ = userDefaults.string(forKey: "APIKey") {
-            let alertController = UIAlertController(title: "Oh no!", message: "The page you're trying to summarize has no content or is blocking the action.", preferredStyle: .alert)
-            alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
             guard let webView = tabManager.selectedTab?.webView else {
-                present(alertController, animated: true, completion: nil)
+                presentAlert(title: "Oh no!", message: "This website has no content or blocked the summary request")
                 return
             }
 
+            showLoadingMessage()
             let summarizer = Summarizer(webView: webView)
             Task {
                 if let summary = await summarizer.summarizePage() {
+                    dismissLoadingMessage()
                     if summary.isEmpty {
                         alertIncorrectAPIKey()
                     } else if (summary.starts(with: "Error")) {
                         presentAlert(title: "Error", message: summary, allowAPIKeyUpdate: true)
                     }else {
+                        dismissLoadingMessage()
                         self.showSummary(summary)
                     }
                 } else {
@@ -436,13 +438,42 @@ extension BrowserViewController: ToolBarActionMenuDelegate {
     }
     
     func showSummary(_ summary: String) {
-        DispatchQueue.main.async { [weak self] in
-            guard let strongSelf = self else { return }
+        let summaryVC = SummaryViewController()
+        summaryVC.setSummaryText(summary)
+        // Use .pageSheet for iOS 13+ style presentation
+        summaryVC.modalPresentationStyle = .pageSheet
+        if let sheet = summaryVC.sheetPresentationController {
+            // If you want to show a portion of the underlying content
+            sheet.detents = [.medium()] // Or use .large() for more content exposure
+            sheet.prefersGrabberVisible = true // If you want to show the grabber
+        }
+        let navigationController = UINavigationController(rootViewController: summaryVC)
+        present(navigationController, animated: true, completion: nil)
+    }
 
-            let summaryView = SummaryView()
-            summaryView.displaySummary(summary)
-            summaryView.frame = CGRect(x: 20, y: 100, width: strongSelf.view.bounds.width - 40, height: 300)
-            strongSelf.view.addSubview(summaryView)
+    
+    func showLoadingMessage() {
+        let alert = UIAlertController(title: nil, message: "Generating site summary...\n\n", preferredStyle: .alert)
+
+        let loadingIndicator = UIActivityIndicatorView(style: .medium)
+        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+        loadingIndicator.startAnimating()
+
+        alert.view.addSubview(loadingIndicator)
+        alert.view.heightAnchor.constraint(equalToConstant: 95).isActive = true
+
+        NSLayoutConstraint.activate([
+            loadingIndicator.centerXAnchor.constraint(equalTo: alert.view.centerXAnchor),
+            loadingIndicator.bottomAnchor.constraint(equalTo: alert.view.bottomAnchor, constant: -20)
+        ])
+
+        present(alert, animated: true, completion: nil)
+    }
+
+    func dismissLoadingMessage(completion: (() -> Void)? = nil) {
+        dismiss(animated: false) {
+            completion?()
         }
     }
+
 }

@@ -91,12 +91,12 @@
       }
     },
     {
-      "identity" : "markdownkit",
+      "identity" : "networkimage",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/bmoliveira/MarkdownKit",
+      "location" : "https://github.com/gonzalezreal/NetworkImage",
       "state" : {
-        "revision" : "5056f3305d3499f44d8815530d560b87082e0cf5",
-        "version" : "1.7.1"
+        "revision" : "7aff8d1b31148d32c5933d75557d42f6323ee3d1",
+        "version" : "6.0.0"
       }
     },
     {
@@ -133,6 +133,15 @@
       "state" : {
         "revision" : "e74fe2a978d1216c3602b129447c7301573cc2d8",
         "version" : "5.7.0"
+      }
+    },
+    {
+      "identity" : "swift-markdown-ui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gonzalezreal/swift-markdown-ui",
+      "state" : {
+        "revision" : "ae799d015a5374708f7b4c85f3294c05f2a564e2",
+        "version" : "2.3.0"
       }
     },
     {
