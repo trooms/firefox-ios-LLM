@@ -1,6 +1,5 @@
 ## Firefox for iOS with ChatGPT Summary Integration
 #### TODO:
-- Stream responses as they're generated
 - Redo generation button
 - Switch API Key after a useable one is used (right now only lets you switch api key if its broken)
 - Change language models

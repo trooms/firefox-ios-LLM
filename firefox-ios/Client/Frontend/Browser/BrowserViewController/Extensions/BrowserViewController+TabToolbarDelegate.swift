@@ -182,25 +182,82 @@ extension BrowserViewController: TabToolbarDelegate, PhotonActionSheetProtocol {
             }
 
             showLoadingMessage()
+
             let summarizer = Summarizer(webView: webView)
+            let summaryStream = summarizer.summarizePage()
+            let summaryVC = SummaryViewController()
+            summaryVC.summarizer = summarizer
+            
+            summaryVC.view.isHidden = true
+            summaryVC.setIsSummarizing(summarizing: true)
             Task {
-                if let summary = await summarizer.summarizePage() {
-                    dismissLoadingMessage()
-                    if summary.isEmpty {
-                        alertIncorrectAPIKey()
-                    } else if (summary.starts(with: "Error")) {
-                        presentAlert(title: "Error", message: summary, allowAPIKeyUpdate: true)
-                    }else {
-                        dismissLoadingMessage()
-                        self.showSummary(summary)
+                do {
+                    var fullErrorMessage = ""
+                    var isError = false
+                    
+                    for try await update in summaryStream {
+                        if (update != "") {
+                            if (update.starts(with: "Error") && !isError) {
+                                isError = true
+                                fullErrorMessage = update
+                            } else if isError {
+                                fullErrorMessage += update
+                            } else {
+                                if summaryVC.view.isHidden {
+                                    summaryVC.view.isHidden = false
+                                    dismissLoadingMessage()
+                                    presentSummaryViewController(summaryVC)
+                                }
+                                summaryVC.appendSummaryText(update)
+                            }
+                        }
                     }
-                } else {
-                    presentAlert(title: "Error", message: "Failed to summarize the page.", allowAPIKeyUpdate: true)
+                    
+                    if isError {
+                        dismissLoadingMessage {
+                            presentAlert(title: "Error", message: fullErrorMessage)
+                        }
+                    }
+                    summaryVC.setIsSummarizing(summarizing: false)
+                } catch SummarizationError.emptyContent{
+                    dismissLoadingMessage {
+                        presentAlert(title: "Error", message: "No content to display", allowAPIKeyUpdate: false)
+                        summaryVC.setIsSummarizing(summarizing: false)
+                    }
+                    
+                } catch SummarizationError.apiKeyNotSet {
+                    dismissLoadingMessage {
+                        presentAlert(title: "Error", message: "Incorrect API Key", allowAPIKeyUpdate: true)
+                        summaryVC.setIsSummarizing(summarizing: false)
+                    }
+                } catch {
+                    dismissLoadingMessage {
+                        presentAlert(title: "Error", message: "\(error)", allowAPIKeyUpdate: true)
+                    }
                 }
             }
         } else {
-            promptForAPIKey()
+            dismissLoadingMessage {
+                promptForAPIKey()
+            }
         }
+        
+        
+        func presentSummaryViewController(_ summaryVC: SummaryViewController) {
+
+            // Present the SummaryViewController
+            summaryVC.modalPresentationStyle = .pageSheet
+            if let sheet = summaryVC.sheetPresentationController {
+                sheet.detents = [.medium()] // Or use .large() for more content exposure
+                sheet.prefersGrabberVisible = true // If you want to show the grabber
+            }
+            DispatchQueue.main.async {
+                let navigationController = UINavigationController(rootViewController: summaryVC)
+                self.present(navigationController, animated: true, completion: nil)
+                summaryVC.setupToolbar()
+            }
+        }
+
         
         func presentAlert(title: String, message: String, allowAPIKeyUpdate: Bool = false) {
             let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -436,21 +493,6 @@ extension BrowserViewController: ToolBarActionMenuDelegate {
                                     flowType: fxaParameters.flowType,
                                     referringPage: fxaParameters.referringPage)
     }
-    
-    func showSummary(_ summary: String) {
-        let summaryVC = SummaryViewController()
-        summaryVC.setSummaryText(summary)
-        // Use .pageSheet for iOS 13+ style presentation
-        summaryVC.modalPresentationStyle = .pageSheet
-        if let sheet = summaryVC.sheetPresentationController {
-            // If you want to show a portion of the underlying content
-            sheet.detents = [.medium()] // Or use .large() for more content exposure
-            sheet.prefersGrabberVisible = true // If you want to show the grabber
-        }
-        let navigationController = UINavigationController(rootViewController: summaryVC)
-        present(navigationController, animated: true, completion: nil)
-    }
-
     
     func showLoadingMessage() {
         let alert = UIAlertController(title: nil, message: "Generating site summary...\n\n", preferredStyle: .alert)

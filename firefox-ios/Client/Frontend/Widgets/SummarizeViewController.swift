@@ -1,21 +1,39 @@
 import UIKit
 import SwiftUI
 import MarkdownUI
+import Combine
 
 class SummaryViewController: UIViewController {
     private let regenerateButton = UIButton()
     private let lockButton = UIButton()
     private var hostingController: UIHostingController<MarkdownContentView>?
     
-    var summaryText: String = ""
+    private var summaryUpdates = PassthroughSubject<String, Never>()
+    private var cancellables = Set<AnyCancellable>()
+    private var markdownViewModel = MarkdownViewModel()
+    private let summaryQueue = OperationQueue()
+    
+    var summarizer: Summarizer?
+    
+    @MainActor private var isSummarizing = false {
+        didSet {
+            regenerateButton.isEnabled = isSummarizing
+            setupToolbar()
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // setupView()
-        // applyStyle()
-        displaySummary(summaryText)
+        summaryQueue.maxConcurrentOperationCount = 1
         setupNavigationBar()
         setupToolbar()
+        summaryUpdates
+            .receive(on: RunLoop.main)
+            .sink { [weak self] text in
+                self?.appendSummaryText(text)
+            }
+            .store(in: &cancellables)
+        
     }
     
     private func setupNavigationBar() {
@@ -23,82 +41,138 @@ class SummaryViewController: UIViewController {
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(closeButtonTapped))
     }
     
-    private func setupToolbar() {
+    func setupToolbar() {
         view.backgroundColor = UIColor.systemGroupedBackground
         navigationController?.isToolbarHidden = false
-
+        
         let regenerateIcon = UIBarButtonItem(image: UIImage(systemName: "arrow.2.circlepath"), style: .plain, target: self, action: #selector(regenerateSummary))
+        regenerateIcon.isEnabled = !isSummarizing
         let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
         let lockIcon = UIBarButtonItem(image: UIImage(systemName: "lock"), style: .plain, target: self, action: #selector(promptForAPIKey))
-
+        
         toolbarItems = [lockIcon, flexibleSpace, regenerateIcon]
         navigationController?.toolbar.barTintColor = .white
     }
+    
+    func appendSummaryText(_ text: String) {
+        var index = text.startIndex
+        while index < text.endIndex {
+            let character = text[index]
 
-    func setSummaryText(_ text: String) {
-        self.summaryText = text
-    }
+            let operation = BlockOperation()
+            operation.addExecutionBlock { [weak self, weak operation] in
+                // Check for cancellation before appending text
+                guard let strongSelf = self, let operation = operation, !operation.isCancelled else { return }
+                
+                DispatchQueue.main.async {
+                    if !operation.isCancelled {
+                        strongSelf.markdownViewModel.markdownText.append(character)
+                        strongSelf.displaySummary()
+                    }
+                }
 
-    func displaySummary(_ summary: String) {
-        // Remove the existing hosting controller if it exists
-        if let existingHostingController = hostingController {
-            existingHostingController.willMove(toParent: nil)
-            existingHostingController.view.removeFromSuperview()
-            existingHostingController.removeFromParent()
+                // Responsive delay
+                let endTime = Date().addingTimeInterval(0.01)
+                while Date() < endTime {
+                    if operation.isCancelled { break }
+                    RunLoop.current.run(mode: .default, before: endTime)
+                }
+            }
+
+            summaryQueue.addOperation(operation)
+            index = text.index(after: index)
         }
-
-        // Create a new hosting controller with the MarkdownContentView
-        let markdownContentView = MarkdownContentView(markdownText: summary)
-        let newHostingController = UIHostingController(rootView: markdownContentView)
-        self.hostingController = newHostingController
-
-        // Set the background color of the hosting controller's view to clear
-        newHostingController.view.backgroundColor = .clear
-        
-        // Ensure that the SwiftUI view uses all the available space
-        newHostingController.view.frame = self.view.bounds
-
-        // Add as child view controller
-        addChild(newHostingController)
-        newHostingController.view.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(newHostingController.view)
-
-        // Setup constraints to match the SummaryViewController's view
-        NSLayoutConstraint.activate([
-            newHostingController.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            newHostingController.view.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            newHostingController.view.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            newHostingController.view.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
-        ])
-
-        // Notify the child view controller
-        newHostingController.didMove(toParent: self)
     }
-
-
+    
+    func displaySummary() {
+        if hostingController == nil {
+            let markdownContentView = MarkdownContentView(viewModel: markdownViewModel)
+            let hostingController = UIHostingController(rootView: markdownContentView)
+            self.hostingController = hostingController
+            hostingController.view.backgroundColor = .clear
+            hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+            addChild(hostingController)
+            view.addSubview(hostingController.view)
+            NSLayoutConstraint.activate([
+                hostingController.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                hostingController.view.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+                hostingController.view.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+                hostingController.view.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+            ])
+            hostingController.didMove(toParent: self)
+        }
+    }
+    
+    func setIsSummarizing(summarizing: Bool) {
+        isSummarizing = summarizing
+    }
+    
+    
     @objc private func closeButtonTapped() {
         dismiss(animated: true, completion: nil)
     }
     
     @objc private func regenerateSummary() {
-        // TODO: Code to regenerate the summary
-        dismiss(animated: true, completion: nil)
-    }
+        guard !isSummarizing else { return }
+
+        isSummarizing = true
+        markdownViewModel.markdownText = ""
+        summaryQueue.cancelAllOperations()
+        summaryQueue.waitUntilAllOperationsAreFinished()
         
-    @objc private func promptForAPIKey() {
-        // TODO: Code to prompt for API key
-        dismiss(animated: true, completion: nil)
+        let summaryStream = summarizer!.summarizePage()
+        
+        Task {
+            do {
+                for try await update in summaryStream {
+                    appendSummaryText(update)
+                }
+                isSummarizing = false
+            } catch {
+                self.isSummarizing = false
+                let alertController = UIAlertController(title: "Error", message: "Error regenerating response. Did you enter your API key in correctly?", preferredStyle: .alert)
+                alertController.addAction(UIAlertAction(title: "Dismiss", style: .default){ _ in
+                    self.dismiss(animated: true, completion: nil)
+                })
+                present(alertController, animated: true)
+            }
+        }
     }
+    
+    @objc private func promptForAPIKey() {
+        let alertController = UIAlertController(title: "Enter Your OpenAI API Key", message: nil, preferredStyle: .alert)
+        
+        alertController.addTextField { textField in
+            textField.placeholder = "API Key"
+            textField.text = UserDefaults.standard.string(forKey: "APIKey")
+        }
+        
+        let confirmAction = UIAlertAction(title: "Done", style: .default) { [weak alertController] _ in
+            guard let alertController = alertController,
+                  let apiKey = alertController.textFields?.first?.text, !apiKey.isEmpty else {
+                return
+            }
+            UserDefaults.standard.set(apiKey, forKey: "APIKey")
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        alertController.addAction(confirmAction)
+        alertController.addAction(cancelAction)
+        
+        present(alertController, animated: true)
+    }
+
 }
 
 struct MarkdownContentView: View {
-    let markdownText: String
+    @ObservedObject var viewModel: MarkdownViewModel
     var theme: Theme = .basic // You can change the theme as needed
 
     var body: some View {
-        ScrollView { // Ensures that content can scroll if it's too long
+        ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Markdown(markdownText)
+                Markdown(viewModel.markdownText)
                     .markdownTheme(theme)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -108,6 +182,10 @@ struct MarkdownContentView: View {
         .background(Color(UIColor.systemGroupedBackground))
         .edgesIgnoringSafeArea(.all)
     }
+}
+
+class MarkdownViewModel: ObservableObject {
+    @Published var markdownText: String = ""
 }
 
 

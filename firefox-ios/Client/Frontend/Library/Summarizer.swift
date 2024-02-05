@@ -10,45 +10,52 @@ class Summarizer {
         self.webView = webView
     }
 
-    func summarizePage() async -> String? {
-        // Ensure JavaScript execution on the main thread
-        return await withCheckedContinuation { continuation in
+    func summarizePage() -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
             DispatchQueue.main.async {
-                self.evaluateAndSummarize(continuation: continuation)
+                self.evaluateAndSummarize { result in
+                    switch result {
+                    case .success(let content):
+                        Task {
+                            await self.summarize(content: content, continuation: continuation)
+                        }
+                    case .failure(let error):
+                        continuation.finish(throwing: error)
+                    }
+                }
             }
         }
     }
 
-    private func evaluateAndSummarize(continuation: CheckedContinuation<String?, Never>) {
+    private func evaluateAndSummarize(completion: @escaping (Result<String, Error>) -> Void) {
         let script = """
         document.title + "\\n\\n" + (document.body.innerText || document.documentElement.innerText || document.documentElement.outerHTML)
         """
         webView?.evaluateJavaScript(script) { result, error in
             if let error = error {
-                continuation.resume(returning: "Error: \(error.localizedDescription)")
+                completion(.failure(error))
                 return
             }
             guard let textContent = result as? String, !textContent.isEmpty else {
-                continuation.resume(returning: nil)
+                completion(.failure(SummarizationError.emptyContent))
                 return
             }
-
-            Task {
-                let summary = await self.summarize(content: textContent)
-                continuation.resume(returning: summary)
-            }
+            completion(.success(textContent))
         }
     }
 
-    private func summarize(content: String) async -> String {
+    private func summarize(content: String, continuation: AsyncThrowingStream<String, Error>.Continuation) async {
         if content.isEmpty {
-            return "Error: No content was found."
+            continuation.finish(throwing: SummarizationError.emptyContent)
+            return
         }
         
         guard let apiKey = UserDefaults.standard.string(forKey: "APIKey") else {
-            UserDefaults.standard.removeObject(forKey: "APIKey")
-            return "Error: API key is not set."
+            continuation.finish(throwing: SummarizationError.apiKeyNotSet)
+            return
         }
+
+        
         let api = OpenAI(apiToken: apiKey)
         
         let prompt =
@@ -81,24 +88,28 @@ class Summarizer {
         If there is no content or it is not accessible for summarization, please respond with: "Error: No content was provided by the webpage."
         
         """
-        
         let query = ChatQuery(model: .gpt3_5Turbo, messages: [
             .init(role: .system, content: prompt),
             .init(role: .user, content: content)
         ])
         
         do {
-            var fullResponse = ""
             for try await result in api.chatsStream(query: query) {
                 for choice in result.choices {
                     if let contentText = choice.delta.content {
-                        fullResponse += contentText
+                        // Send updates to the update handler on the main thread
+                        continuation.yield(contentText)
                     }
                 }
             }
-            return fullResponse
+            continuation.finish()
         } catch {
-            return "Error: \(error.localizedDescription)"
+            continuation.finish(throwing: "Error: \(error.localizedDescription)")
         }
     }
+}
+
+enum SummarizationError: Error {
+    case emptyContent
+    case apiKeyNotSet
 }
