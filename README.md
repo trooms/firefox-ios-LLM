@@ -1,5 +1,5 @@
 ## Firefox for iOS with ChatGPT Summary Integration
-Project made over a day for a job application to integrate a language model within on firefox for ios or android.
+Project made over a day for a job application to integrate a language model within firefox for ios or android.
 ### Prototype 3
 https://github.com/trooms/firefox-ios-LLM/assets/70113554/94501421-2f5f-4d11-bccb-626a14f74bbd
 ### Prototype 2
